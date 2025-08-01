@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقسيم PDF (فردي أو زوجي) - ملف واحد</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body style="font-family: sans-serif; direction: rtl; text-align: center; margin-top: 50px;">
+
+  <h2>قص صفحات PDF (فردي أو زوجي)</h2>
+  <input type="file" id="pdfFile" accept="application/pdf"><br><br>
+
+  <label><input type="radio" name="mode" value="odd" checked> الصفحات الفردية فقط</label><br>
+  <label><input type="radio" name="mode" value="even"> الصفحات الزوجية فقط</label><br><br>
+
+  <button onclick="cropPages()">قص PDF</button>
+
+  <p id="status"></p>
+
+  <script>
+    async function cropPages() {
+      const fileInput = document.getElementById('pdfFile');
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const status = document.getElementById("status");
+
+      if (!fileInput.files.length) {
+        alert("يرجى اختيار ملف PDF أولاً");
+        return;
+      }
+
+      status.textContent = "جاري المعالجة...";
+
+      const file = fileInput.files[0];
+      const arrayBuffer = await file.arrayBuffer();
+      const originalPdf = await PDFLib.PDFDocument.load(arrayBuffer);
+      const totalPages = originalPdf.getPageCount();
+      const newPdf = await PDFLib.PDFDocument.create();
+
+      for (let i = 0; i < totalPages; i++) {
+        const isEven = (i + 1) % 2 === 0;
+        if ((mode === "even" && isEven) || (mode === "odd" && !isEven)) {
+          const [page] = await newPdf.copyPages(originalPdf, [i]);
+          newPdf.addPage(page);
+        }
+      }
+
+      const pdfBytes = await newPdf.save();
+      const filename = mode === "even" ? "صفحات_زوجية.pdf" : "صفحات_فردية.pdf";
+      saveAs(new Blob([pdfBytes]), filename);
+
+      status.textContent = "✅ تم إنشاء الملف الجديد!";
+    }
+  </script>
+
+</body>
+</html>
